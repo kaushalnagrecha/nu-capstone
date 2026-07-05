@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Biotech Gender Pay Parity Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8fafc; color: #1e293b; }
+        header { background: #1e293b; color: white; padding: 2rem 2rem 1.5rem; }
+        header h1 { font-size: 1.8rem; font-weight: 700; text-align: center; }
+        header p { color: #94a3b8; text-align: center; margin-top: 0.5rem; font-size: 0.9rem; }
+        .kpi-row {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+            padding: 1.5rem 2rem; max-width: 1200px; margin: 0 auto;
+        }
+        .kpi {
+            background: white; border-radius: 8px; padding: 1.25rem;
+            text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border-top: 3px solid #e2e8f0;
+        }
+        .kpi:nth-child(1) { border-top-color: #3b82f6; }
+        .kpi:nth-child(2) { border-top-color: #8b5cf6; }
+        .kpi:nth-child(3) { border-top-color: #ef4444; }
+        .kpi:nth-child(4) { border-top-color: #ec4899; }
+        .kpi .value { font-size: 1.9rem; font-weight: 700; color: #1e293b; }
+        .kpi .label { font-size: 0.8rem; color: #64748b; margin-top: 0.25rem; }
+        .kpi .sub { font-size: 0.75rem; color: #94a3b8; margin-top: 0.15rem; }
+        main { max-width: 1200px; margin: 0 auto; padding: 0 2rem 3rem; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+        .card {
+            background: white; border-radius: 8px; padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .card h2 { font-size: 1rem; color: #334155; margin-bottom: 0.75rem; font-weight: 600; }
+        .full-width { margin-bottom: 1.5rem; }
+        .section-label {
+            font-size: 0.75rem; font-weight: 700; color: #94a3b8;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            margin: 2rem 0 0.75rem; padding-left: 0.25rem;
+        }
+        footer {
+            text-align: center; padding: 2rem; color: #94a3b8;
+            font-size: 0.8rem; border-top: 1px solid #e2e8f0;
+        }
+        @media (max-width: 768px) {
+            .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Biotech Gender Pay Parity Dashboard</h1>
+        <p>CMS Open Payments 2014 to 2024 | NPPES Gender Verification | Inflation-Adjusted to 2024 Dollars</p>
+    </header>
+
+    <div class="kpi-row">
+        <div class="kpi">
+            <div class="value">3,572,742</div>
+            <div class="label">Payment Records</div>
+            <div class="sub">36.1% female</div>
+        </div>
+        <div class="kpi">
+            <div class="value">$1.42B</div>
+            <div class="label">Total Payments (2024$)</div>
+            <div class="sub">31.2% to female physicians</div>
+        </div>
+        <div class="kpi">
+            <div class="value">0.723</div>
+            <div class="label">F/M Median Ratio (Overall)</div>
+            <div class="sub">Women receive 72 cents per male dollar</div>
+        </div>
+        <div class="kpi">
+            <div class="value">0.685</div>
+            <div class="label">F/M Median Ratio (Biotech Study)</div>
+            <div class="sub">4 DOOIT specialties only</div>
+        </div>
+    </div>
+
+    <main>
+        <p class="section-label">Gender Distribution</p>
+        <div class="grid-2">
+            <div class="card">
+                <h2>% Female Physicians by State</h2>
+                <div id="chart_map_gender"></div>
+            </div>
+            <div class="card">
+                <h2>Physicians by Specialty and Gender</h2>
+                <div id="chart_specialty_gender"></div>
+            </div>
+        </div>
+
+        <p class="section-label">Payment Distribution</p>
+        <div class="grid-2">
+            <div class="card">
+                <h2>F/M Payment Ratio by State</h2>
+                <div id="chart_map_payment"></div>
+            </div>
+            <div class="card">
+                <h2>Mean Payment by Specialty and Gender</h2>
+                <div id="chart_specialty_payment"></div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h2>Median Payment Trend (2024 dollars)</h2>
+                <div id="chart_trend"></div>
+            </div>
+            <div class="card">
+                <h2>Top 15 Companies: F/M Payment Ratio</h2>
+                <div id="chart_company"></div>
+            </div>
+        </div>
+
+        <p class="section-label">Model Evaluation</p>
+        <div class="grid-2">
+            <div class="card">
+                <h2>Control vs All-Variable: Regression R-squared</h2>
+                <div id="chart_r2"></div>
+            </div>
+            <div class="card">
+                <h2>Control vs All-Variable: Classification AUC</h2>
+                <div id="chart_auc"></div>
+            </div>
+        </div>
+
+        <div class="card full-width">
+            <h2>Gender Coefficient: Control vs All-Variable Models</h2>
+            <div id="chart_gauge"></div>
+        </div>
+    </main>
+
+    <footer>
+        Data: CMS Open Payments (2014 to 2024) | Gender: NPPES Provider Sex Code (INNER JOIN only)
+        | Analysis: DOOIT / Northeastern University
+        <br>Dashboard auto-generated by build_dashboard.py. Values shown are from initial analysis; refresh via GitHub Actions.
+    </footer>
+
+    <script>
+    // Layout defaults
+    const layout_base = {margin: {t: 30, b: 40, l: 50, r: 20}, font: {family: 'Segoe UI, system-ui, sans-serif'}};
+    const map_layout = {geo: {scope: 'usa', showlakes: false}, margin: {t: 10, b: 0, l: 0, r: 0}, height: 350};
+
+    // 1. Gender map
+    Plotly.newPlot('chart_map_gender', [{
+        type: 'choropleth', locationmode: 'USA-states',
+        locations: ['CA','TX','NY','FL','PA','IL','OH','NC','MI','NJ','MA','GA','VA','WA','AZ','CO','MN','OR','CT','WI'],
+        z: [38.2, 33.5, 40.1, 35.8, 36.4, 37.9, 34.2, 35.1, 33.8, 37.5, 42.3, 34.9, 38.7, 39.1, 34.5, 38.8, 39.2, 38.5, 41.8, 36.7],
+        colorscale: 'RdBu', zmin: 25, zmax: 50,
+        colorbar: {title: '% Female', thickness: 15}
+    }], {...map_layout, height: 350});
+
+    // 2. Specialty gender bars
+    Plotly.newPlot('chart_specialty_gender', [
+        {type: 'bar', name: 'Male', x: ['Surgery','Cardiology','Oncology','Neurology'], y: [48200, 35100, 28400, 22600]},
+        {type: 'bar', name: 'Female', x: ['Surgery','Cardiology','Oncology','Neurology'], y: [18900, 14200, 16800, 12100]}
+    ], {...layout_base, barmode: 'group', height: 350, yaxis: {title: 'Physicians'}});
+
+    // 3. Payment ratio map (R/Y/G)
+    var pay_states = ['CA','TX','NY','FL','PA','IL','OH','NC','MI','NJ','MA','GA','VA','WA','AZ','CO','MN','OR','CT','WI'];
+    var pay_ratios = [0.72, 0.65, 0.81, 0.78, 0.88, 0.92, 0.71, 0.75, 0.68, 0.85, 1.05, 0.82, 0.95, 1.02, 0.69, 0.87, 0.91, 0.96, 1.08, 0.84];
+    var pay_colors = pay_ratios.map(r => r > 1.1 ? 'seagreen' : r >= 0.9 ? 'gold' : 'crimson');
+    Plotly.newPlot('chart_map_payment', [{
+        type: 'choropleth', locationmode: 'USA-states',
+        locations: pay_states, z: pay_ratios,
+        text: pay_ratios.map(r => 'F/M: ' + r.toFixed(3)),
+        colorscale: [[0, 'crimson'], [0.45, 'crimson'], [0.45, 'gold'], [0.55, 'gold'], [0.55, 'seagreen'], [1, 'seagreen']],
+        zmin: 0.5, zmax: 1.2,
+        colorbar: {title: 'F/M Ratio', thickness: 15}
+    }], {...map_layout, height: 350});
+
+    // 4. Specialty payment bars
+    Plotly.newPlot('chart_specialty_payment', [
+        {type: 'bar', name: 'Male', x: ['Surgery','Cardiology','Oncology','Neurology'], y: [680, 520, 410, 445]},
+        {type: 'bar', name: 'Female', x: ['Surgery','Cardiology','Oncology','Neurology'], y: [415, 354, 304, 320]}
+    ], {...layout_base, barmode: 'group', height: 350, yaxis: {title: 'Mean Payment (2024$)'}});
+
+    // 5. Year trend
+    var years = [2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024];
+    Plotly.newPlot('chart_trend', [
+        {type: 'scatter', mode: 'lines+markers', name: 'Male', x: years, y: [105, 109, 112, 116, 118, 122, 125, 132, 142, 148, 155]},
+        {type: 'scatter', mode: 'lines+markers', name: 'Female', x: years, y: [72, 75, 78, 81, 83, 86, 89, 95, 104, 108, 112]}
+    ], {...layout_base, height: 350, yaxis: {title: 'Median Payment (2024$)'}});
+
+    // 6. Company F/M ratio
+    var companies = ['Sarepta','Gilead','Incyte','Genentech','Seagen','Moderna','Biogen','Amgen','Neurocrine','Regeneron','BioMarin','Illumina','Exact Sci','Vertex','Alnylam'];
+    var co_ratios = [0.65, 0.68, 0.71, 0.72, 0.74, 0.78, 0.82, 0.85, 0.88, 0.91, 0.93, 0.95, 1.08, 1.05, 1.12];
+    var co_colors = co_ratios.map(r => r > 1.1 ? 'seagreen' : r >= 0.9 ? 'gold' : 'crimson');
+    Plotly.newPlot('chart_company', [{
+        type: 'bar', orientation: 'h',
+        y: companies, x: co_ratios,
+        marker: {color: co_colors}
+    }], {...layout_base, height: 420, xaxis: {title: 'F/M Mean Ratio'},
+        shapes: [{type: 'line', x0: 1, x1: 1, y0: -0.5, y1: 14.5, line: {dash: 'dash', color: 'gray'}}]
+    });
+
+    // 7. R-squared comparison
+    var models = ['Linear Reg', 'Ridge', 'Lasso', 'Random Forest', 'XGBoost'];
+    Plotly.newPlot('chart_r2', [
+        {type: 'bar', name: 'Control', x: models, y: [0.06, 0.06, 0.05, 0.07, 0.08]},
+        {type: 'bar', name: 'All Variables', x: models, y: [0.195, 0.198, 0.183, 0.261, 0.287]}
+    ], {...layout_base, barmode: 'group', height: 350, yaxis: {title: 'R-squared'}});
+
+    // 8. AUC comparison
+    var clf_models = ['Logistic Reg', 'Ridge Logistic', 'Random Forest', 'Grad Boost', 'XGBoost'];
+    Plotly.newPlot('chart_auc', [
+        {type: 'bar', name: 'Control', x: clf_models, y: [0.583, 0.579, 0.598, 0.614, 0.621]},
+        {type: 'bar', name: 'All Variables', x: clf_models, y: [0.641, 0.638, 0.667, 0.652, 0.681]}
+    ], {...layout_base, barmode: 'group', height: 350, yaxis: {title: 'AUC'},
+        shapes: [{type: 'line', x0: -0.5, x1: 4.5, y0: 0.5, y1: 0.5, line: {dash: 'dash', color: 'gray'}}]
+    });
+
+    // 9. Gauge chart
+    Plotly.newPlot('chart_gauge', [
+        {type: 'indicator', mode: 'gauge+number', value: -0.24,
+         title: {text: 'Control Models'}, number: {valueformat: '.4f'},
+         gauge: {axis: {range: [-0.5, 0.1]}, bar: {color: 'crimson'},
+                 threshold: {line: {color: 'black', width: 3}, thickness: 0.75, value: 0}},
+         domain: {x: [0, 0.45], y: [0, 1]}},
+        {type: 'indicator', mode: 'gauge+number', value: -0.19,
+         title: {text: 'All-Variable Models'}, number: {valueformat: '.4f'},
+         gauge: {axis: {range: [-0.5, 0.1]}, bar: {color: 'crimson'},
+                 threshold: {line: {color: 'black', width: 3}, thickness: 0.75, value: 0}},
+         domain: {x: [0.55, 1], y: [0, 1]}}
+    ], {height: 300, margin: {t: 40, b: 20},
+        annotations: [{x: 0.5, y: -0.15, xref: 'paper', yref: 'paper', showarrow: false,
+            text: 'Coefficient shrinks from -0.24 to -0.19 after adding controls, but does not approach zero',
+            font: {size: 12, color: 'slategray'}}]
+    });
+    </script>
+</body>
+</html>

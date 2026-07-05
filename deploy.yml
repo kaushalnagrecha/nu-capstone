@@ -1,0 +1,93 @@
+name: ETL and Deploy Dashboard
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Run monthly on the 1st at 6am UTC to pick up new CMS data releases
+    - cron: '0 6 1 * *'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  etl:
+    name: Run ETL if data is missing
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check if data exists
+        id: check_data
+        run: |
+          if [ -f "data/biotech_payments_2014_2024.csv" ] && [ -s "data/biotech_payments_2014_2024.csv" ]; then
+            echo "data_exists=true" >> $GITHUB_OUTPUT
+            echo "Data CSV found, skipping ETL."
+          else
+            echo "data_exists=false" >> $GITHUB_OUTPUT
+            echo "Data CSV missing or empty, ETL will run."
+          fi
+
+      - name: Set up Python
+        if: steps.check_data.outputs.data_exists == 'false'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        if: steps.check_data.outputs.data_exists == 'false'
+        run: |
+          pip install duckdb pyarrow
+
+      - name: Run ETL pipeline
+        if: steps.check_data.outputs.data_exists == 'false'
+        run: |
+          python etl.py --output data
+
+      - name: Commit and push CSV
+        if: steps.check_data.outputs.data_exists == 'false'
+        run: |
+          git config user.name "ETL Bot"
+          git config user.email "etl-bot@automated.local"
+          git add data/biotech_payments_2014_2024.csv
+          git diff --staged --quiet || git commit -m "ETL: update biotech_payments_2014_2024.csv"
+          git push
+
+  dashboard:
+    name: Build and deploy static dashboard
+    needs: etl
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Pull latest (in case ETL pushed)
+        run: git pull origin main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas plotly
+
+      - name: Generate static dashboard
+        run: |
+          python build_dashboard.py
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
