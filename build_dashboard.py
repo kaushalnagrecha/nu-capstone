@@ -31,9 +31,17 @@ def classify_specialty(raw_spec):
 
 def build():
     print("Loading data...")
+    zip_path = "data/biotech_payments_2014_2024.zip"
     csv_path = "data/biotech_payments_2014_2024.csv"
-    if not os.path.exists(csv_path):
-        print(f"ERROR: {csv_path} not found. Run etl.py first.")
+
+    if os.path.exists(zip_path):
+        import zipfile
+        with zipfile.ZipFile(zip_path, 'r') as zf:
+            csv_name = [f for f in zf.namelist() if f.endswith('.csv')][0]
+            zf.extract(csv_name, 'data')
+            csv_path = os.path.join('data', csv_name)
+    elif not os.path.exists(csv_path):
+        print(f"ERROR: neither {zip_path} nor {csv_path} found. Run etl.py first.")
         return
 
     df = pd.read_csv(csv_path)

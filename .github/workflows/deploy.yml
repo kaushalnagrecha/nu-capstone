@@ -26,12 +26,12 @@ jobs:
       - name: Check if data exists
         id: check_data
         run: |
-          if [ -f "data/biotech_payments_2014_2024.csv" ] && [ -s "data/biotech_payments_2014_2024.csv" ]; then
+          if [ -f "data/biotech_payments_2014_2024.zip" ] && [ -s "data/biotech_payments_2014_2024.zip" ]; then
             echo "data_exists=true" >> $GITHUB_OUTPUT
-            echo "Data CSV found, skipping ETL."
+            echo "Data zip found, skipping ETL."
           else
             echo "data_exists=false" >> $GITHUB_OUTPUT
-            echo "Data CSV missing or empty, ETL will run."
+            echo "Data zip missing or empty, ETL will run."
           fi
 
       - name: Set up Python
@@ -50,13 +50,13 @@ jobs:
         run: |
           python etl.py --output data
 
-      - name: Commit and push CSV
+      - name: Commit and push data
         if: steps.check_data.outputs.data_exists == 'false'
         run: |
           git config user.name "ETL Bot"
           git config user.email "etl-bot@automated.local"
-          git add data/biotech_payments_2014_2024.csv
-          git diff --staged --quiet || git commit -m "ETL: update biotech_payments_2014_2024.csv"
+          git add data/biotech_payments_2014_2024.zip
+          git diff --staged --quiet || git commit -m "ETL: update biotech_payments_2014_2024.zip"
           git push
 
   dashboard:

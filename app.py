@@ -9,6 +9,7 @@ Deploy to Streamlit Community Cloud:
 """
 
 import streamlit as st
+import os
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -37,7 +38,17 @@ def classify_specialty(raw_spec):
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data/biotech_payments_2014_2024.csv")
+    import zipfile as zf_mod
+    zip_path = "data/biotech_payments_2014_2024.zip"
+    csv_path = "data/biotech_payments_2014_2024.csv"
+
+    if os.path.exists(zip_path) and not os.path.exists(csv_path):
+        with zf_mod.ZipFile(zip_path, 'r') as zf:
+            csv_name = [f for f in zf.namelist() if f.endswith('.csv')][0]
+            zf.extract(csv_name, 'data')
+            csv_path = os.path.join('data', csv_name)
+
+    df = pd.read_csv(csv_path)
     df["gender_label"] = df["gender"].map({"M": "Male", "F": "Female"})
     df["spec_cat"] = df["specialty_raw"].apply(classify_specialty)
     return df

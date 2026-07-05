@@ -120,6 +120,10 @@ def run_etl(output_dir):
     csv_output = os.path.join(output_dir, CSV_FILENAME)
 
     # Check if output already exists
+    zip_output = csv_output.replace('.csv', '.zip')
+    if os.path.exists(zip_output) and os.path.getsize(zip_output) > 1000:
+        print(f'Output already exists: {zip_output} ({os.path.getsize(zip_output) / 1e6:.1f} MB)')
+        return csv_output
     if os.path.exists(csv_output) and os.path.getsize(csv_output) > 1000:
         print(f'Output already exists: {csv_output} ({os.path.getsize(csv_output) / 1e6:.1f} MB)')
         return csv_output
@@ -257,7 +261,14 @@ def run_etl(output_dir):
 
         n = con.execute(f"SELECT COUNT(*) FROM '{combined_pq}'").fetchone()[0]
         print(f'Exported: {n:,} rows to {csv_output}')
-        print(f'File size: {os.path.getsize(csv_output) / 1e6:.1f} MB')
+        print(f'CSV size: {os.path.getsize(csv_output) / 1e6:.1f} MB')
+
+        # Compress CSV to zip for GitHub push
+        zip_output = csv_output.replace('.csv', '.zip')
+        import zipfile as zf_mod
+        with zf_mod.ZipFile(zip_output, 'w', zf_mod.ZIP_DEFLATED) as zout:
+            zout.write(csv_output, os.path.basename(csv_output))
+        print(f'Zipped:   {os.path.getsize(zip_output) / 1e6:.1f} MB')
 
     # ---- Cleanup ----
     con.close()
@@ -276,18 +287,18 @@ def run_etl(output_dir):
 
 
 def git_push(output_dir):
-    """Stage, commit, and push the CSV to the current branch."""
-    csv_path = os.path.join(output_dir, CSV_FILENAME)
-    if not os.path.exists(csv_path):
-        print('No CSV to push.')
+    """Stage, commit, and push the zipped CSV to the current branch."""
+    zip_path = os.path.join(output_dir, CSV_FILENAME.replace('.csv', '.zip'))
+    if not os.path.exists(zip_path):
+        print('No zip to push.')
         return
 
     print('\n=== Git Push ===')
     commands = [
         ['git', 'config', 'user.email', 'etl-bot@automated.local'],
         ['git', 'config', 'user.name', 'ETL Bot'],
-        ['git', 'add', csv_path],
-        ['git', 'commit', '-m', f'ETL: update {CSV_FILENAME}'],
+        ['git', 'add', zip_path],
+        ['git', 'commit', '-m', f'ETL: update {os.path.basename(zip_path)}'],
         ['git', 'push'],
     ]
     for cmd in commands:
